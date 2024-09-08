@@ -48,5 +48,5 @@ def export_csv():
     output.seek(0)
     return send_file(output, mimetype='text/csv', attachment_filename='results.csv', as_attachment=True)
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == '__main__':
+    app.run(debug=True)
