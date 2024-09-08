@@ -1,53 +1,52 @@
 from flask import Flask, render_template, request, send_file
+import requests
+from bs4 import BeautifulSoup
 import csv
 from io import StringIO
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
 
 app = Flask(__name__)
 
-def check_tag(link, tags):
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-    
+def check_keyword_in_url(url, keyword):
     try:
-        driver.get(link)
-        content = driver.page_source
+        response = requests.get(url)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            return keyword.lower() in soup.text.lower()
+        else:
+            return False
     except Exception as e:
-        driver.quit()
-        return str(e)
-
-    driver.quit()
-    return all(tag.lower() in content.lower() for tag in tags)
+        print(f"Error checking {url}: {e}")
+        return False
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    results = None
+    results = []
     if request.method == 'POST':
-        links = request.form['links'].splitlines()
-        tags = [tag.strip() for tag in request.form['tags'].split(',')]
-        results = [(link, check_tag(link, tags)) for link in links]
-    return render_template('index.html', results=results)
+        urls = request.form.get('urls').splitlines()
+        keyword = request.form.get('keyword')
+        for url in urls:
+            contains_keyword = check_keyword_in_url(url, keyword)
+            results.append({
+                'url': url,
+                'contains_keyword': 'Yes' if contains_keyword else 'No'
+            })
+        return render_template('index.html', results=results, keyword=keyword)
+    return render_template('index.html', results=None)
 
-@app.route('/export_csv')
+@app.route('/export_csv', methods=['POST'])
 def export_csv():
-    links = request.args.getlist('links')
-    tags = request.args.get('tags').split(',')
-    tags = [tag.strip() for tag in tags]
-    si = StringIO()
-    cw = csv.writer(si)
-    cw.writerow(['Link', 'Contains Tags'])
-    for link in links:
-        contains = check_tag(link, tags)
-        cw.writerow([link, contains])
-    output = si.getvalue().encode('utf-8')
-    return send_file(StringIO(output), mimetype='text/csv', as_attachment=True, download_name='results.csv')
+    urls = request.form.get('urls').splitlines()
+    keyword = request.form.get('keyword')
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['URL', 'Contains Keyword'])
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    for url in urls:
+        contains_keyword = check_keyword_in_url(url, keyword)
+        writer.writerow([url, 'Yes' if contains_keyword else 'No'])
+
+    output.seek(0)
+    return send_file(output, mimetype='text/csv', attachment_filename='results.csv', as_attachment=True)
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
