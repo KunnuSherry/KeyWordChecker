@@ -49,4 +49,4 @@ def export_csv():
     return send_file(output, mimetype='text/csv', attachment_filename='results.csv', as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
