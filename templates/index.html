@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyword Checker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Keyword Checker</h1>
+        <form method="POST">
+            <div>
+                <label for="urls">Enter URLs (one per line):</label><br>
+                <textarea id="urls" name="urls" rows="10" cols="50" required></textarea>
+            </div>
+            <div>
+                <label for="keyword">Enter Keyword:</label><br>
+                <input type="text" id="keyword" name="keyword" required>
+            </div>
+            <div>
+                <button type="submit">Check Keyword</button>
+            </div>
+        </form>
+        <div class="results">
+            <h2>Results:</h2>
+            <ul>
+                {% for result in results %}
+                    <li>{{ result }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
