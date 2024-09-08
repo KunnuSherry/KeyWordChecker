@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keyword Checker</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Tag Checker</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Keyword Checker</h1>
-        <form method="POST">
-            <div>
-                <label for="urls">Enter URLs (one per line):</label><br>
-                <textarea id="urls" name="urls" rows="10" cols="50" required></textarea>
-            </div>
-            <div>
-                <label for="keyword">Enter Keyword:</label><br>
-                <input type="text" id="keyword" name="keyword" required>
-            </div>
-            <div>
-                <button type="submit">Check Keyword</button>
-            </div>
-        </form>
-        <div class="results">
-            <h2>Results:</h2>
-            <ul>
-                {% for result in results %}
-                    <li>{{ result }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
+    <h1>Check if Links Contain Tags</h1>
+    <form action="/" method="post">
+        <label for="links">Enter Links (one per line):</label><br>
+        <textarea name="links" rows="10" cols="50"></textarea><br>
+        <label for="tags">Enter Tags (comma separated):</label><br>
+        <input type="text" name="tags"><br><br>
+        <input type="submit" value="Check Links">
+    </form>
+
+    {% if results is not none %}
+    <h2>Results</h2>
+    <table border="1">
+        <tr>
+            <th>Link</th>
+            <th>Contains Tags</th>
+        </tr>
+        {% for link, contains in results %}
+        <tr>
+            <td>{{ link }}</td>
+            <td>{{ contains }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="{{ url_for('export_csv', links=request.form.getlist('links'), tags=request.form.get('tags')) }}" class="btn btn-primary">Download CSV</a>
+    {% endif %}
 </body>
 </html>
