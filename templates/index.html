@@ -1,36 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-     <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tag Checker</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Keyword Checker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Check if Links Contain Tags</h1>
-    <form action="/" method="post">
-        <label for="links">Enter Links (one per line):</label><br>
-        <textarea name="links" rows="10" cols="50"></textarea><br>
-        <label for="tags">Enter Tags (comma separated):</label><br>
-        <input type="text" name="tags"><br><br>
-        <input type="submit" value="Check Links">
-    </form>
+    <div class="container">
+        <h1>Keyword Checker</h1>
+        <form method="POST">
+            <label for="links">Enter URLs (one per line):</label><br>
+            <textarea id="links" name="links" rows="10" cols="50" placeholder="Enter URLs here..."></textarea><br><br>
+            <label for="tags">Enter Tags (comma-separated):</label><br>
+            <input type="text" id="tags" name="tags" placeholder="Enter tags here..."><br><br>
+            <input type="submit" value="Check Keywords">
+        </form>
 
-    {% if results is not none %}
-    <h2>Results</h2>
-    <table border="1">
-        <tr>
-            <th>Link</th>
-            <th>Contains Tags</th>
-        </tr>
-        {% for link, contains in results %}
-        <tr>
-            <td>{{ link }}</td>
-            <td>{{ contains }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <a href="{{ url_for('export_csv', links=request.form.getlist('links'), tags=request.form.get('tags')) }}" class="btn btn-primary">Download CSV</a>
-    {% endif %}
+        {% if results %}
+        <h2>Results</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>URL</th>
+                    <th>Contains Tags</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for link, contains in results %}
+                <tr>
+                    <td>{{ link }}</td>
+                    <td>{{ 'Yes' if contains else 'No' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('export_csv', links=request.form['links'].splitlines(), tags=request.form['tags']) }}" class="btn-download">Download CSV</a>
+        {% endif %}
+    </div>
 </body>
 </html>
