@@ -1,60 +1,51 @@
+from flask import Flask, render_template, request, send_file
 import csv
-import io
-from flask import Flask, render_template, request, Response
-import requests
-from bs4 import BeautifulSoup
+from io import StringIO
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
 
 app = Flask(__name__)
 
+def check_tag(link, tags):
+    # Set up Selenium
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    
+    try:
+        driver.get(link)
+        content = driver.page_source
+    except Exception as e:
+        driver.quit()
+        return str(e)
+
+    driver.quit()
+    return all(tag.lower() in content.lower() for tag in tags)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    results = None
     if request.method == 'POST':
-        links = request.form.getlist('links')
-        tags = request.form.get('tags').split(',')
-        results = []
-
-        for link in links:
-            try:
-                response = requests.get(link)
-                soup = BeautifulSoup(response.text, 'html.parser')
-                contains_tags = any(soup.find_all(tag) for tag in tags)
-                results.append((link, 'Yes' if contains_tags else 'No'))
-            except Exception as e:
-                results.append((link, f'Error: {e}'))
-
-        return render_template('index.html', results=results)
-
-    return render_template('index.html', results=None)
+        links = request.form['links'].splitlines()
+        tags = [tag.strip() for tag in request.form['tags'].split(',')]
+        results = [(link, check_tag(link, tags)) for link in links]
+    return render_template('index.html', results=results)
 
 @app.route('/export_csv')
 def export_csv():
     links = request.args.getlist('links')
     tags = request.args.get('tags').split(',')
-    results = []
-
-    for link in links:
-        try:
-            response = requests.get(link)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            contains_tags = any(soup.find_all(tag) for tag in tags)
-            results.append((link, 'Yes' if contains_tags else 'No'))
-        except Exception as e:
-            results.append((link, f'Error: {e}'))
-
-    # Create a string buffer to hold CSV data
-    si = io.StringIO()
+    tags = [tag.strip() for tag in tags]
+    si = StringIO()
     cw = csv.writer(si)
     cw.writerow(['Link', 'Contains Tags'])
-    cw.writerows(results)
-    csv_data = si.getvalue()
-
-    # Create a response object with the CSV data
-    response = Response(
-        csv_data,
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment;filename=results.csv"}
-    )
-    return response
+    for link in links:
+        contains = check_tag(link, tags)
+        cw.writerow([link, contains])
+    output = si.getvalue().encode('utf-8')
+    return send_file(StringIO(output), mimetype='text/csv', as_attachment=True, download_name='results.csv')
 
 if __name__ == '__main__':
     app.run(debug=True)
